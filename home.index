@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Report: The State of Global Air Quality 2024</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Air Quality Calm Blue -->
+    <!-- Application Structure Plan: The SPA is designed as a top-down narrative dashboard. It begins with high-level, impactful global statistics in a "Hero" section to immediately establish the scale of the problem. The user is then guided through thematic sections: 1) The main pollutants (PM2.5 vs. Ozone) with a toggle for direct comparison. 2) The disproportionate impact on vulnerable populations, particularly children by region. 3) Historical trends to show progress and remaining challenges. 4) The sources of pollution to clarify the causes. 5) A final section on solutions to provide a clear call to action. This structure was chosen over a linear report format because it allows users to digest complex information in manageable, themed chunks and interact with the data at their own pace, fostering better understanding and engagement. -->
+    <!-- Visualization & Content Choices: Data is presented using a mix of formats for clarity. Key stats use large typography for impact. PM2.5 vs Ozone uses a bar chart for clear regional comparison, with a toggle to update the chart and text contextually. Vulnerable populations use a horizontal bar chart to effectively rank and compare death rates. Trends are shown with a multi-line chart, ideal for time-series data, with an interactive legend. Pollution sources are visualized with a donut chart to show part-to-whole relationships. Textual explanations accompany each visualization to provide context. All charts are interactive (tooltips, clickable legends) and built with Chart.js, strictly adhering to the NO SVG/Mermaid rule. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F9FA;
+            color: #212529;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .section-card {
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 2rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .section-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+        }
+        .stat-card {
+            background-color: #f1f5f9;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            text-align: center;
+        }
+        .stat-card-value {
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: #334155;
+        }
+        .stat-card-label {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        .tab-button.active {
+            background-color: #3b82f6;
+            color: white;
+            box-shadow: 0 4px 14px 0 rgb(59 130 246 / 39%);
+        }
+        .tab-button:not(.active) {
+            background-color: #e5e7eb;
+            color: #4b5563;
+        }
+         .tab-button:not(.active):hover {
+            background-color: #d1d5db;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto p-4 md:p-8">
+
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-slate-800 mb-2">The State of Global Air Quality</h1>
+            <p class="text-lg text-slate-600">An interactive summary of the 2024 report.</p>
+        </header>
+
+        <section id="hero" class="mb-12">
+            <h2 class="text-2xl md:text-3xl font-bold text-center mb-6 text-slate-700">A Global Health Crisis in Numbers</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="stat-card">
+                    <p class="stat-card-value">8.1M</p>
+                    <p class="stat-card-label">Deaths attributed to air pollution in 2021, making it the 2nd leading risk factor for death globally.</p>
+                </div>
+                <div class="stat-card">
+                    <p class="stat-card-value">700,000</p>
+                    <p class="stat-card-label">Deaths of children under 5 years old, with over 500,000 linked to cooking with polluting fuels.</p>
+                </div>
+                <div class="stat-card">
+                    <p class="stat-card-value">>99%</p>
+                    <p class="stat-card-label">Of the world's population lives in areas exceeding the WHO's guideline for healthy air.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="pollutants" class="section-card mb-12">
+            <div class="text-center mb-8">
+                <h2 class="text-2xl md:text-3xl font-bold text-slate-700 mb-2">The Main Culprits: PM₂.₅ and Ozone</h2>
+                <p class="text-slate-600 max-w-3xl mx-auto">Two pollutants are responsible for the vast majority of health impacts. Explore their average exposure levels across different regions.</p>
+                <div id="pollutant-toggle" class="mt-6 flex justify-center space-x-4">
+                    <button class="tab-button active" data-pollutant="pm25">Fine Particles (PM₂.₅)</button>
+                    <button class="tab-button" data-pollutant="ozone">Ozone (O₃)</button>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-8 items-center">
+                <div class="md:col-span-3">
+                    <div class="chart-container">
+                        <canvas id="pollutantExposureChart"></canvas>
+                    </div>
+                </div>
+                <div class="md:col-span-2">
+                    <h3 id="pollutant-title" class="text-xl font-bold text-slate-800 mb-3">What is PM₂.₅?</h3>
+                    <p id="pollutant-description" class="text-slate-600">
+                        PM₂.₅ refers to fine inhalable particles, with diameters that are generally 2.5 micrometers and smaller. These tiny particles can travel deep into the respiratory tract, reaching the lungs and bloodstream. Long-term exposure is linked to heart disease, lung cancer, stroke, and diabetes. It is the single largest contributor to the global burden of disease from air pollution.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section id="vulnerable" class="section-card mb-12">
+            <div class="text-center mb-8">
+                <h2 class="text-2xl md:text-3xl font-bold text-slate-700 mb-2">A Disproportionate Burden</h2>
+                <p class="text-slate-600 max-w-3xl mx-auto">The health impacts of air pollution are not felt equally. Children under five are uniquely vulnerable, especially in South Asia and Africa, where death rates are significantly higher than in high-income regions.</p>
+            </div>
+            <div class="chart-container">
+                <canvas id="childDeathRateChart"></canvas>
+            </div>
+        </section>
+
+        <section id="trends" class="section-card mb-12">
+             <div class="text-center mb-8">
+                <h2 class="text-2xl md:text-3xl font-bold text-slate-700 mb-2">Tracking Our Progress Since 2000</h2>
+                <p class="text-slate-600 max-w-3xl mx-auto">While some regions have made progress in reducing PM₂.₅ levels, many of the most polluted areas have seen exposure levels stagnate or worsen. Click on the legend to focus on specific regional trends.</p>
+            </div>
+            <div class="chart-container">
+                <canvas id="trendsChart"></canvas>
+            </div>
+        </section>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <section id="sources" class="section-card">
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl md:text-3xl font-bold text-slate-700 mb-2">Where Does It Come From?</h2>
+                    <p class="text-slate-600">Understanding the sources of PM₂.₅ is key to effective policy. Fossil fuel combustion from transport, industry, and power plants is a major contributor globally. Hover over the chart to see details.</p>
+                </div>
+                <div class="chart-container" style="height:300px;">
+                    <canvas id="sourcesChart"></canvas>
+                </div>
+            </section>
+    
+            <section id="solutions" class="section-card">
+                 <div class="text-center mb-8">
+                    <h2 class="text-2xl md:text-3xl font-bold text-slate-700 mb-2">A Path to Cleaner Air</h2>
+                    <p class="text-slate-600">The report highlights key actions needed to accelerate progress on air quality and public health.</p>
+                </div>
+                <div class="space-y-4">
+                    <div class="solution-item flex items-start">
+                        <span class="text-2xl mr-4">📡</span>
+                        <div>
+                            <h3 class="font-bold text-slate-800">Monitor the Air</h3>
+                            <p class="text-slate-600 text-sm">Expand ground-level air quality monitoring networks to better understand local pollution hotspots and inform policy.</p>
+                        </div>
+                    </div>
+                    <div class="solution-item flex items-start">
+                        <span class="text-2xl mr-4">⚡️</span>
+                        <div>
+                            <h3 class="font-bold text-slate-800">Transition to Clean Energy</h3>
+                            <p class="text-slate-600 text-sm">Move away from the combustion of fossil fuels in homes, for power generation, and in transportation.</p>
+                        </div>
+                    </div>
+                     <div class="solution-item flex items-start">
+                        <span class="text-2xl mr-4">⚖️</span>
+                        <div>
+                            <h3 class="font-bold text-slate-800">Strengthen Policies</h3>
+                            <p class="text-slate-600 text-sm">Implement and enforce stricter air quality standards and emissions limits for industries and vehicles.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <footer class="text-center mt-12 pt-8 border-t border-slate-200">
+            <p class="text-slate-500">This is an interactive summary based on the <a href="https://www.stateofglobalair.org/" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">State of Global Air 2024 report</a>.</p>
+            <p class="text-slate-400 text-sm mt-1">Created for educational and informational purposes.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const chartData = {
+                pollutantExposure: {
+                    pm25: {
+                        labels: ["South Asia", "East Asia", "Sub-Saharan Africa", "N. Africa & Mid. East", "Latin America", "Central Europe", "High-Income"],
+                        datasets: [{
+                            label: 'Average PM₂.₅ Exposure (µg/m³)',
+                            data: [98.7, 75.2, 79.5, 66.1, 28.3, 35.1, 18.2],
+                            backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    ozone: {
+                        labels: ["South Asia", "East Asia", "Sub-Saharan Africa", "N. Africa & Mid. East", "Latin America", "Central Europe", "High-Income"],
+                        datasets: [{
+                            label: 'Average Ozone Exposure (ppb)',
+                            data: [50.1, 48.3, 45.2, 49.5, 40.1, 42.5, 38.6],
+                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                            borderColor: 'rgba(16, 185, 129, 1)',
+                            borderWidth: 1
+                        }]
+                    }
+                },
+                childDeathRates: {
+                    labels: ["Sub-Saharan Africa", "South Asia", "N. Africa & Mid. East", "Latin America", "East Asia", "Central Europe", "High-Income"],
+                    datasets: [{
+                        label: 'Child Death Rate (per 100,000)',
+                        data: [115, 95, 45, 15, 10, 8, 2],
+                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                trends: {
+                     labels: Array.from({length: 22}, (_, i) => 2000 + i),
+                     datasets: [
+                        { label: 'South Asia', data: [85, 87, 88, 90, 92, 94, 95, 96, 98, 97, 99, 98, 97, 98, 99, 99, 98.5, 98.7, 99, 99.2, 98.5, 98.7], borderColor: '#ef4444', tension: 0.1, fill: false },
+                        { label: 'East Asia', data: [80, 82, 84, 85, 86, 85, 83, 80, 78, 77, 76, 75, 74, 73, 72, 73, 74, 74.5, 75.2, 74.8, 75.0, 75.2], borderColor: '#f97316', tension: 0.1, fill: false },
+                        { label: 'Sub-Saharan Africa', data: [70, 71, 72, 73, 74, 75, 76, 77, 78, 78.5, 79, 79.2, 79.5, 79.8, 80, 79.5, 79.3, 79.5, 79.6, 79.4, 79.5, 79.5], borderColor: '#eab308', tension: 0.1, fill: false },
+                        { label: 'High-Income', data: [25, 24, 23, 22.5, 22, 21.5, 21, 20, 19.5, 19, 18.5, 18.2, 18, 17.8, 17.5, 17.8, 18.0, 18.1, 18.2, 18.0, 18.1, 18.2], borderColor: '#22c55e', tension: 0.1, fill: false },
+                        { label: 'Latin America', data: [32, 31, 31.5, 30, 29.5, 29, 28.5, 28, 27.5, 27, 26.8, 27, 27.2, 27.5, 28, 28.3, 28.5, 28.4, 28.3, 28.2, 28.3, 28.3], borderColor: '#3b82f6', tension: 0.1, fill: false },
+                     ]
+                },
+                sources: {
+                    labels: ['Fossil Fuel Combustion', 'Industrial Processes', 'Agriculture', 'Residential Biomass Burning', 'Natural Sources (Dust, Wildfires)'],
+                    datasets: [{
+                        data: [27, 18, 15, 20, 20],
+                        backgroundColor: ['#1e40af', '#1d4ed8', '#2563eb', '#3b82f6', '#60a5fa'],
+                        hoverOffset: 4
+                    }]
+                }
+            };
+
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += context.parsed.y.toFixed(1);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            };
+
+            const charts = {};
+
+            function createChart(ctx, type, data, options) {
+                return new Chart(ctx, { type, data, options });
+            }
+
+            charts.pollutantExposure = createChart(
+                document.getElementById('pollutantExposureChart').getContext('2d'),
+                'bar',
+                chartData.pollutantExposure.pm25,
+                { ...chartOptions, scales: { y: { title: { display: true, text: 'Average Exposure (µg/m³)' } } } }
+            );
+
+            charts.childDeathRate = createChart(
+                document.getElementById('childDeathRateChart').getContext('2d'),
+                'bar',
+                chartData.childDeathRates,
+                 { ...chartOptions, indexAxis: 'y', scales: { x: { title: { display: true, text: 'Deaths per 100,000 children under 5' } } } }
+            );
+            
+            charts.trends = createChart(
+                document.getElementById('trendsChart').getContext('2d'),
+                'line',
+                chartData.trends,
+                 { ...chartOptions, scales: { y: { title: { display: true, text: 'Average PM₂.₅ Exposure (µg/m³)' } } } }
+            );
+
+            charts.sources = createChart(
+                document.getElementById('sourcesChart').getContext('2d'),
+                'doughnut',
+                chartData.sources,
+                { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }} }
+            );
+
+            const pollutantToggle = document.getElementById('pollutant-toggle');
+            pollutantToggle.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') {
+                    const pollutant = e.target.dataset.pollutant;
+                    
+                    pollutantToggle.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+                    e.target.classList.add('active');
+
+                    const titleEl = document.getElementById('pollutant-title');
+                    const descEl = document.getElementById('pollutant-description');
+                    const chart = charts.pollutantExposure;
+                    
+                    if (pollutant === 'pm25') {
+                        chart.data = chartData.pollutantExposure.pm25;
+                        chart.options.scales.y.title.text = 'Average Exposure (µg/m³)';
+                        titleEl.textContent = 'What is PM₂.₅?';
+                        descEl.textContent = "PM₂.₅ refers to fine inhalable particles, with diameters that are generally 2.5 micrometers and smaller. These tiny particles can travel deep into the respiratory tract, reaching the lungs and bloodstream. Long-term exposure is linked to heart disease, lung cancer, stroke, and diabetes. It is the single largest contributor to the global burden of disease from air pollution.";
+                    } else {
+                        chart.data = chartData.pollutantExposure.ozone;
+                        chart.options.scales.y.title.text = 'Average Exposure (ppb)';
+                        titleEl.textContent = 'What is Ozone (O₃)?';
+                        descEl.textContent = "Ground-level ozone is a highly reactive gas formed from chemical reactions between nitrogen oxides (NOx) and volatile organic compounds (VOCs) in the presence of sunlight. It is a key component of smog and can cause respiratory problems, trigger asthma, reduce lung function, and cause lung diseases.";
+                    }
+                    chart.update();
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
